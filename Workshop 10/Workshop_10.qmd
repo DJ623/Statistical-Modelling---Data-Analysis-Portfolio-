@@ -1,0 +1,52 @@
+---
+title: "5240 Workshop 10"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+### 1. Loading and Exploring data ....
+```{r}
+library(dplyr)
+awards <- read.csv(file='ws10-exercise-awards.csv')
+head(awards,5)
+```
+```{r}
+str(awards)
+summary(awards)
+```
+From the summary above, the data contained no outliers or extreme values for any of the columns.
+
+
+### 2. Data Preprocessing 
+Conversion of Prog to a factor 
+```{r}
+awards <- awards %>% 
+  mutate(prog = factor(prog, levels = c(1,2,3),
+                       labels = c("General","Academic","Vocational")))
+
+str(awards)
+```
+Removing Null Values 
+```{r}
+colSums(is.na(awards))
+```
+The data contained no Null values, but the prog variable was in integer which was converted to a suitable data type factor. 
+
+Data is ready for analysis !
+
+## 3. Poisson regression model
+```{r}
+
+poisson_dist <- glm(num_awards ~ prog + math, 
+                     family = poisson(link = "log"), data = awards)
+
+
+summary(poisson_dist)
+```
+
+### 4. Summary
+All the aboe programs (proAcademic,proVocational and math variable) are compared to General type program. From the test it was observed that There is no difference in number of awards won between proVocational(p = 0.40) and proGeneral as p >0.05, and they both have very low number of awards. Students who took proAcademic had a higher number of awards than General students. Also math score was a significant factor influencing the number of awards won.
+
+
+
+

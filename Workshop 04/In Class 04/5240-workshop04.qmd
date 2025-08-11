@@ -1,0 +1,269 @@
+---
+title: "Workshop 04"
+date: "October 1, 2024"
+date-format: long
+format: pdf
+---
+
+# First - Data for the Workshop Exercise
+
+```{=tex}
+\begin{center}
+\LARGE https://forms.office.com/r/AJJMrzBmzB
+\end{center}
+```
+
+![](qr_code-workshop04_exercise.png){fig-align="center" width="60%"}
+
+\newpage
+
+# Probability and Distributions in R
+
+## Functions
+
+There are many functions that will help us find probabilities, 
+percentiles, create random samples, and plot distributions in R.
+
+```{r}
+#| eval: false
+
+?distributions
+```
+
+This will bring up the help file for the named distributions that are 
+built into R. Additional packages can provide additional distributions 
+and functionality!
+
+For any named distribution listed in `?distributions`, there are 
+four associated functions:
+
+- `pxxx` - the "p" here stands for "probability and this function let's us 
+calculate probabilities using the Cumulative Distribution Function (CDF). 
+There are two probability expressions for which we can calculate $p$ in the 
+below if we have a given value of $x$:
+$$
+p = P(X \leq x) \qquad \text{or} \qquad p = 1 - P(X \leq x) = P(X > x)
+$$
+- `qxxx` - the "q" here stands for "quantile". These functions use the 
+_inverse CDF_ to find values of $x$ for given values of $p$:
+$$
+p = P(X \leq x) \qquad \text{or} \qquad p = 1 - P(X \leq x) = P(X > x)
+$$
+- `dxxx` - the "d" stands for "distribution". This function will give us the 
+height of the PMF or PDF at a given value of $x$.
+$$
+p(x) \quad \text{or} \qquad f(x)
+$$
+    - For a discrete distribution, this function calculates $P(X = x)$, 
+    however this is **NOT** the case for continuous distributions since 
+    $P(X = x) = 0$ if $X$ is continuous :) .
+- `rxxx` - the "r" stands for "random" and will generate random samples of a 
+given size from the distribution. This is very useful for simulation.
+
+### Distributions of Note
+
+We will be interested in the Binomial, Normal, $t$, $\chi^{2}$, and $F$ 
+distributions in particular.
+
+For the next bit, we will focus solely on Binomial. We will be looking at the 
+Normal distribution next week.
+
+The functions we will use the most are:
+
+- **Binomial**: `dbinom` and `rbinom`
+    - We won't use the others to be honest :)
+- **Normal**: `pnorm` and `qnorm`
+    - We won't use the others (or not often!)
+
+# Three Particular Distributions
+
+## The Bernoulli
+
+The Bernoulli distribution represents the outcome of a single Bernoulli Trial. 
+(I know, not super helpful... ). A Bernoulli trial is a random experiment 
+where there are only two possibe outcomes; we label these "**success**" and 
+"**failure**" (note: these are _just_ labels!).
+
+I think that the best way to think about a Bernoulli trial is that it represents 
+the outcome of a coin flip.
+
+## The Binomial
+
+The Binomial distribution is the first distribution that we will actually make 
+use of directly. The Binomial distribution represents the number of "successes" 
+out of $n$ independent Bernoulli trials where the probability of success, $p$, 
+on each trial is the same for all $n$ trials.
+
+We can think of flipping the same coin $n$ times and counting the number of 
+heads ("success"?) that we observe.
+
+If $X$ is a Binomially distributed random variable where we are counting 
+the number of successes over $n$ Bernoulli trials and the probability of 
+success on any trial is $p$, then we would write:
+
+$$
+X \sim \text{Bionomial}(n, p)
+$$
+
+## How do we calculate probabilities?
+
+To calculate $P(X = x)$ for a Binomial r.v., we can use the `dbinom` function!
+
+Assume $X \sim \text{Binomial}(n, p)$ where $n = 12$ and $p = 0.3$, find 
+the following probabilities:
+
+1. $P(X = 12)$
+
+```{r}
+
+```
+
+2. $P(X = 3)$
+
+```{r}
+
+```
+
+### Not Just Outcomes, but Events:
+
+Well, we know that outcomes in a sample space are mutually exclusive. 
+Let's assume that $X_{1}, X_{2}, \ldots, X_{n}$ are all mutually exclusive
+discrete random variables, then:
+
+$$
+\begin{aligned}
+&P(X_{1} = x_{1} \text{ or } X_{2} = x_{2} \text{ or } X_{3} = x_{3} \text{ or } 
+\ldots \text{ or } X_{n} = x_{n}) \\
+= &P(X_{1} = x_{1}) + P(X_{2} = x_{2}) + P(X_{3} = x_{3}) + \cdots + P(X_{n} = x_{n})
+\end{aligned}
+$$
+
+### Apply This to the Binomial
+
+Assume again that $X \sim \text{Binomial}(n, p)$ where $n = 12$ and $p = 0.3$, find 
+the following probabilities:
+
+1. $P(X \leq 3)$
+
+```{r}
+
+```
+
+
+2. $P(4 \leq X < 9)$
+
+```{r}
+sum(dbinom(x = 4:8 , size = 12, prob = 0.3))
+
+```
+
+3. $P(X > 8)$
+
+```{r}
+sum(dbinom(x=9:12 , size = 12 , prob = 0.3))
+```
+
+4. $P(X < 3 \text{ or } X > 9)$
+
+```{r}
+
+```
+
+
+### Let's "Do an Experiment"!
+
+**Based on Data**:
+
+Assume that we want to count the number of 6's that we roll on 5 dice.  
+
+Let's pretend that we don't know _what_ the distribution is ... 
+
+Let's collect some data!
+
+Volunteers?
+
+**Our data**:
+
+```{r}
+#| label: dice-rolling-data
+
+
+```
+
+
+### Theoretically
+
+Okay, well, we actually _know_ the distribution of the random variable that 
+represents "the number of 6's rolled on 5 dice"!
+
+It's Binomial!
+
+What are the parameters?
+
+How would we write the relationship between the random variable and its 
+associated distribution?
+
+**Plot the Theoretical PMF**
+
+
+
+# Calculating Bernoulli Probabilities in R
+
+## Example 1
+
+1. What is the probability of observing an odd number of heads on 10 coin flips 
+when using a fair coin?
+
+2. A poll was conducted the day before an election. It found that 
+60\% of elligible voters surveyed planned to vote.  
+After election day, we will find out the real numbers, but, we want to 
+play around with our probabilities! Let's assume that we have 
+**randomly sampled** 200 elligible voters on election day, after the polls 
+closed and asked them whether they voted (assume they are honest):
+    i. What is the probability that more than 130 voted?
+    ii. What is the probability that between 120 and 135 voted?
+    iii. What is the probability that exactly 120 voted?
+    iv. What is the probability that less than 100 voted?
+
+
+## Example 2
+
+Dave buys a pack of 30 light bulbs. The manufacturer claims that only 1\% 
+of its bulbs will be defective.
+
+Dave finds that 3 bulbs in his pack do not work... 
+
+1. What is the probability that Dave would have purchased a pack of bulbs 
+as bad, _or worse_, if the manufacturer's claims were true?
+
+2. Plotting:
+    i. plot the probability mass function associated with a box of 30 bulbs 
+    under the assumption that the manufacturer's claim is true.
+    ii. indicate where the probability from part 1. would be on this plot.
+    
+3. Thoughts? Should Dave believe the manufacturer's claim?
+
+
+# End
+
+We will be looking at the normal distribution next week and will be starting on 
+hypothesis testing!
+
+:::{.callout-important}
+### Tricksy
+Actually, the example with lightbulbs is essentially hypothesis testing ...  
+We will formalize this next week :) 
+:::
+
+```{r}
+x <- c(2.2, 5.4, 7.2, 2, 1.3, 3.8, 0.9, 1.4, 3.8, 1.2, 2.2, 17.6, 9.7, 4.4, 0.1, 2.6, 0.6, 9.4, 2, 3.2, 1.8, 4.6, 4.4, 0, 5.4, 1.5, 3.6, 1.4, 0.6, 1.7, 5.5, 1.5, 3.7, 1.1, 1.3, 10.1, 0.1, 1.6, 0.2, 1.2, 1.9, 10.8, 5.7, 7.5, 1.4, 0.7, 0.5, 0.3, 1.2, 0.2, 7, 1.8, 1.1, 5.2, 4.3, 7.2, 0.4, 3.5, 3.4, 0.4, 4.5, 4.5, 2.3, 0.8, 1.1, 1.8, 7.3, 1, 11.5, 3.1, 2.6, 0.3, 5.8, 3.2, 1, 0.2, 1.1, 6.5, 7.9, 1.3, 15.2, 1.9, 1.7, 2.3, 0.7, 6.2, 0.4, 0.5, 2.9, 1.1, 4.7, 6.9, 0, 1.4, 2.6, 1.2, 2.5, 0.3, 8.8, 0.2, 0.8, 2, 2.5, 6.4, 1.5, 4.8, 2.4, 2.7, 10, 6.4, 0.6, 0.2, 0.3, 5.1, 6.7, 2.2, 3.7, 8.8, 1.3, 5.1, 1.7, 0.3, 7.5, 2, 1.4, 3.7, 0.4, 4.5, 3.3, 2.1, 3.2, 0.4, 0.3, 1.2, 0.2, 1.9, 0.1, 3.2, 0.1, 6.4, 4.3, 6.2, 7.2, 3.1, 4.6, 0.1, 2.3, 14.8, 3.8, 7.1, 0.3, 0.7, 2.5, 1.3, 2, 2.1, 0.5, 2.4, 2.7, 2.6, 1.7, 0.7, 0.7, 3.1, 2.8, 10.7, 6.3, 0)
+```
+```{r}
+mean(x)
+summary(x)
+IQR(x)
+hist(x)
+boxplot(x)
+var(x)
+```
+

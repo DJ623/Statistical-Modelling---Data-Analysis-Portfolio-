@@ -1,0 +1,49 @@
+---
+title: "5240 Workshop 04"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+## Loading Data of Birthday
+```{r}
+birth_month_df <- read.csv("ws04-exercise-birth_months.csv")
+
+birth_month <-birth_month_df$birth_month
+```
+
+## Frequency Table
+```{r}
+frequency_of_bday <- table(birth_month)
+frequency_of_bday
+```
+
+## Bar Plot
+```{r}
+barplot(frequency_of_bday,
+        main = "Students Born in Different Months",
+        xlab = "Months",
+        ylab = "Number of Students",
+        col = "turquoise",
+        cex.names = 0.7)
+```
+
+## Probablity Calculation
+```{r}
+total_students <- sum(frequency_of_bday)
+total_students
+```
+```{r}
+winter_months <-c("Dec", "Jan", "Feb", "Mar")
+total_studemts_of_winter <- sum(frequency_of_bday[winter_months])
+total_studemts_of_winter
+```
+```{r}
+student_born_in_winter <- total_studemts_of_winter / total_students
+student_born_in_winter
+```
+Probablity that a student might be born in winter is 0.21 
+
+
+
+
+

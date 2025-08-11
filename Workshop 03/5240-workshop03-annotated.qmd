@@ -1,0 +1,337 @@
+---
+title: "Workshop 03"
+date: "September 24, 2024"
+date-format: long
+format: pdf
+---
+
+We started to talk about subsetting data.frames last week, however we were 
+running out of time!
+
+## Subsetting Data Frames
+
+First, it is **absolutely critical** that you place the `.csv` file in the same
+directory as this `.qmd` file if you want this to work.
+
+```{r}
+#| label: load_data
+
+ap <- read.csv(file = "5240-workshop03-data.csv", header = TRUE)
+str(ap)
+```
+
+- This data.frame consists of 2 variables: ozone and nitrogen dioxide 
+measurements.
+- The units on these variables is parts per million (ppm).
+- The data consists of daily measurements from 1981 to 1984.
+- $NO_{2}$ is actually lagged by 1-day; i.e., each row of $O_3$, $NO_2$ 
+measurements is ozone at time $t$ and $NO_{2}$ at time $t-1$.
+- This is real data from the National Air Pollution Surveilance (NAPS) 
+network run in Canada by Environment and Climate Change Canada (ECCC).
+- The measurements are of ground-level pollutants.
+
+```{r}
+#| label: fig-no2
+#| fig-cap: "Measurements of NO2 per day since start of collection."
+plot(x = 1:1094, y = ap$no2, 
+     type = 'l', xlab = "Days Since Collection Start", 
+     ylab = "NO2 (ppb)")
+```
+
+## Back to Subsetting
+
+What if we know that any value of NO2 being greater than 60 is an error 
+in the measurement or recording device.  
+(We will just pretend that this is true for these examples.)
+
+### Logical Comparisons
+
+When we do comparison of things, this results in what is known as a Boolean
+variable (in R, these take on the values `TRUE` and `FALSE` and are called 
+`logical` variable types).
+
+We use logic! If we compare two things in `R`, it returns logical answers:
+`TRUE` means **YES**, and `FALSE` means **NO**.  
+The expressions that return `TRUE` or `FALSE` are called _logical expressions_.
+
+Let's _pretend_ that any value of NO2 over 60 would be considered an error from 
+the instrument. How can we find _where_ that value is?
+
+```{r}
+#| label: do_logical
+
+answers <- ap$no2 > 60
+str(answers)
+```
+
+```{r}
+answers[310:330] # here we are selecting the 310 through 330's element of the vector
+```
+
+
+If we removed the `[310:330]` thing above, it would print 1095 answers. Way too
+many to look at on our own! But when we print just a few, we see a `TRUE`. Can
+you see it? There's more than one in the data set. How do we know that?
+
+```{r}
+sum(answers)
+```
+
+When we add variables, R will do its best to convert those variable types into 
+`numeric` variables. In most programming languages, `TRUE` is 1, while `FALSE` 
+is 0. So, if we sum a `logical` vector, we will end up counting the number of 
+`TRUE` values!
+
+In our case, this is the number of observations that are larger than 60.
+
+Now, here's the really interesting thing. We're going to break this off because
+it's so important.
+
+### REALLY IMPORTANT FACT
+
+If you use a logical vector as a selection operation (i.e., to subset), 
+`TRUE` values get selected, and `FALSE` values get ignored.
+
+### Example
+
+Consider the numbers 1 through 20. We would like to identify the ones that are
+greater than 11. Obviously you can just do this, but how would you tell R to do
+it?
+
+```{r}
+#| label: logical_example
+
+our_numbers <- 1:20
+our_logic <- ( our_numbers > 11 )
+our_numbers
+our_logic
+
+our_numbers[ our_logic ]
+```
+
+So by creating a logical comparison (`our_logic`), we are able to subset the
+vector `our_numbers` and only keep the ones that are greater than 11.
+
+### Back to the NO2 data
+
+We want to keep **only** the elements of NO2 that are less than 60. How do we do this?
+
+There are _at least_ two ways to do this:
+
+1. Use the method above by creating a vector of logical 
+values and then using those to subset the rows of the data frame.
+2. Use the `subset` function to perform the same operation.
+
+```{r}
+# Method 1
+no2_lt_60_logical <- ap$no2 < 60
+no2_lt_60 <- ap$no2[no2_lt_60_logical]
+str(no2_lt_60)
+```
+
+or
+
+
+
+
+```{r}
+# Method 2
+no2_lt_60_v2 <- subset(ap, no2 < 60, select = no2, drop = TRUE)
+str(no2_lt_60_v2)
+```
+
+So what is happening here? Both methods have the same basic structure:
+
+- The data frame we are subsetting
+- Identify the rows using a logical expression
+- Select the columns (we did this in the first method using `ap$no2`)
+
+In the second method, we also need to use `drop = TRUE`. What happens if you 
+don't use that?
+
+Notice how this vector is only 1090 elements long now? The original data set was
+1094! We have removed 4 observations - fake outliers!
+
+## Final Note: Accessing Data Frames, and Subsetting by Observation
+
+What we just did was actually subset a **vector**, since every column is a 
+vector and we used the `$` operator to return a single column from the data 
+frame.  
+However, `data.frame` objects aren't vectors:  
+they are 2D objects, like spreadsheets. When subsetting a data frame we have to
+specify the **rows** and the **columns**!
+
+```{r}
+#| label: outlier_removal_demo
+
+no_outliers_no2 <- ap[ no2_lt_60_logical, ]
+str(no_outliers_no2)
+```
+
+What did we do here? We took `ap` (the spreadsheet: 2 variables, 1094
+observations) and told R that we wanted to keep only the rows where the NO2 was
+$< 60$, and (because nothing was specified after the comma) to keep *all* of the
+columns. Without the comma, it would break, so be careful!
+
+This would be the same as:
+
+```{r}
+no_outliers_no2_v2 <- subset(ap, no2 < 60)
+str(no_outliers_no2_v2)
+```
+
+
+# Linear Models
+
+## Scatter Plots
+
+- Create a scatterplot of $O_{3}$ on the y-axis vs. $NO_{2}$ on the x-axis 
+(use the `plot` function);
+- Add appropriate axis labels (`xlab` and `ylab`);
+
+```{r}
+#| label: fig-plot-o3-no2
+
+plot(x = ap$no2, y = ap$o3, 
+     xlab = "NO2 (ppm)", 
+     ylab = "O3 (ppm)")
+```
+
+An alternative method is to use the same syntax that we did for the 
+`lm` function; i.e., `y ~ x` "y as a function of x":
+
+```{r}
+plot(o3 ~ no2, data = ap,
+     xlab = "NO2 (ppm)", 
+     ylab = "O3 (ppm)")
+```
+
+Since we do not have the variables `o3` or `no2`, we use `data = ap` so that 
+the function knows that these are actually columns of a data frame.
+
+How would you describe the relationship between $O_{3}$ and $NO_{2}$?  
+
+Looks like it might be positive, weak (or moderate?), and probaly 
+not only linear? Hard to say with this plot.
+
+Remember that we want to describe any relationship between two variables using
+
+- direction (positive, negative, none)
+- strength (strong, moderate, weak, none)
+- type (linear, quadratic, exponential, logarithmic, etc... )
+
+Note that sometimes "positive" or "negative" won't make a lot of sense. For 
+example, if we have a cosine, or a quadratic where we see both positive and 
+negative aspects.
+
+## Correlation
+
+Calculate the correlation between $O_{3}$ and $NO_{2}$:
+
+```{r}
+#| label: fig-cor-o3-no2
+
+cor(ap$no2, ap$o3)
+```
+
+Does this value match your intuition from the plot?  
+Is this a strong linear relationship?  _Nope!_
+In what direction? _Positive_
+
+## Fit a Linear Model
+
+Us the `lm` function to fit a linear model using `o3` as the response 
+variable.  
+Use the `summary` function to print out the model information.
+
+```{r}
+#| label: lm-o3-no2
+
+mdl <- lm(o3 ~ no2, data = ap)
+summary(mdl)
+```
+
+
+## Write the Model Equation
+
+To create math equations, we use dollar signs.
+
+For example, we could write: we estimated the $\beta$ coefficients 
+in the simple linear regression model between $O_{3}$ and $NO_{2}$.
+
+We can also use "display style" equations:
+
+$$
+\hat{y} = \beta_{0} + \beta_{1}x
+$$
+
+Now, write the model equation for the regression model that you just fit 
+by pulling the coefficients out of the `summary()` above, or by using 
+another method. Round the coefficients to something reasonable!
+
+$$
+\hat{O}_{3} = 12.1 + 0.09 \cdot NO_{2}
+$$
+
+## Plot the Data and the Linear Regression Line
+
+Next, use the `plot` function again to plot the data and add the 
+line of best fit (the model regression line that we just fit) to the plot.
+
+You can do this by using the `abline` function. The only argument _needed_ 
+is the model object that you fit!
+
+You might also want to change the colour of the line; this can be done by 
+adding the `col = "blue"` (or whatever colour!) to the function.
+
+```{r}
+#| label: fig-line-of-best-fit
+
+plot(o3 ~ no2, data = ap, 
+     xlab = "NO2 (ppm)",
+     ylab = "O3 (ppm)")
+abline(mdl, col = "blue", lwd = 2)
+```
+
+`col` can be set to a "named" colour (run `colors()` to see a list of possible
+colours!) or to a hex code (e.g., `#FF0000` is red). There is also a function 
+called `rgb` that can be used. See the help file to find out how the 
+syntax!
+
+## Predictions
+
+Lastly, let's predict the $O_{3}$ concentration given the following $NO_{2}$ 
+measurements: 10, 20, 25, 30, 50, 70.
+
+Create a data frame with a column named `no2` that contains those values.
+
+```{r}
+#| label: no2-data-frame
+
+new_no2 <- data.frame(no2 = c(10, 20, 25, 30, 50, 70))
+```
+
+Next, use the `predict` function in order to obtain predicted values of $O_{3}$.
+
+```{r}
+#| label: o3-predictions
+
+new_o3 <- predict(mdl, newdata = new_no2)
+```
+
+
+Let's assume that $O_{3}$ levels above 35 ppm would be considered a risk to 
+health.  
+Would any of our predictions be considered a risk to health? Use a logical 
+expression to determine that!  
+(Yes, I know you could just look at the predictions :) ).
+
+```{r}
+#| label: risk-to-health
+
+pred_o3_gt_35 <- new_o3 > 35
+sum(pred_o3_gt_35)
+```
+
+None of our predicted $O_{3}$ values are above 35 ppm.  
+PHEW! No _expected_ risk to health.

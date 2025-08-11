@@ -1,0 +1,87 @@
+---
+title: "5240 R Assignment 01"
+author: "Digvijay Jondhale - 0862899"
+format: pdf
+---
+
+## Introduction
+
+I like to explore a lot , but with the people who are really interested . So whenever I use to make some plan to visit places , my friends and other people around me used to get drop off from the plan by the end of the day , and initially I wondered they might be busy! *and that can be true as well*. But later I found out that many of them just drop off because *they were not interested* in the **location** than being busy.
+
+So I decided to collect data from the people I know including family members , friends , colleagues. By using this data I will be able to select and contact the right people for planning future trips or vaccations. 
+
+## Data Collection
+
+1. The Data I collected is from the people I know and the groups which I am part of on      whatsapp.
+
+2. I created a google form (*kept it small and simple* so people would respond) to          collect the following data :
+    * Name
+    * EmailID
+    * Favourite Travel Destination :
+      + *Beach*
+      + *Snowy-Mountains / Cold regions*
+      + *Mountains*
+      + *Forest*
+      + *City*
+      + *Countryside*
+
+  ![Data collected using Google forms](data_collection.png)
+  
+3. The form was restricted for only *one* response per user account to avoid duplication or ambiguous data.
+
+4. The population for the collected data is 47.
+
+
+# Data Summaries
+
+```{r}
+people_data <- read.csv(file="data.csv" , header = TRUE)
+
+# Total Number of People participated in survey
+length(people_data$Email.Address)
+
+count_destination <- table(people_data$What.s.your.favourite.travel.destination..)
+
+
+barplot(count_destination,
+        xlab = "Favourite Destination",
+        ylab = "Number of People",
+        main = "Peoples interest in different travel destination",
+        col = c("#4CAF50", "#2196F3","#FF9800","#E91E63","#9C27B0","#FFC107"),
+        names.arg = c("Beach" , "City" , "Countryside" , "Forest" , "Mountains" , "Cold region"),
+        cex.names = 0.7)
+
+
+
+```
+1. Total 47 people participated in this survey and their data count for each category is presented In Figure 2.
+
+```{r}
+data.frame(count_destination)
+```
+  ![Peoples interest in different travel destination](table_ss.png)
+  
+# Discussion
+
+1. From the above barplot , maximum people about 14 are interested to travel to beach.
+2. Only *two* out of 47 people are interested to visit City's
+3. *Seven* people are interested in Countryside
+4. It is interesting that for Mountains and cold regions the proportion is same.
+
+Proportions of Each travel Destination (in % ) is given below
+```{r}
+round(100*(prop.table(count_destination)),2)
+```
+
+As it is clear from the collected data that maximum people are interested in beaches than any other destination. However this data cannot be generalized to a large population because the people who are the source of data in this assignment are mostly located in same geographic area where I live, and to improve this further , I can collect more data like people living in different countries or people living near the beach , etc. This can provide more details of the popularity of travel destinations. 
+
+Additionally we can ask for more details like profession and age of people and try to find any relation between their preferences according to their age or profession or both.
+
+
+# Conclusion
+
+This survey was done for myself to be able select the people for my next trip / vacation, So I now know which people to contact when planning a trip to beach or other travel destinations.
+
+# Acknowledgements
+
+I would like to thank all the people who responded to this survey providing me with data for this assignment.

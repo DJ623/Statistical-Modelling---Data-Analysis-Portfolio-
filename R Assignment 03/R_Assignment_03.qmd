@@ -1,0 +1,315 @@
+---
+title: "R Assignment 03"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+# Question 1- Shapiro-Wilks Unmasked [12 marks]
+
+### Loading the data ...
+```{r}
+income <- readRDS("income.rds")
+income_df <- data.frame(income)
+```
+## a) [4 marks] Plot a histogram, QQ-plot, and boxplot of the data. Also run shapiro.test. Would you conclude that the normality condition is satisfied?
+
+**Ans : **
+### Histogram 
+```{r}
+hist(income_df$income/1000,breaks = 30,
+     xlab = "Income in Thousand Dollars",
+     ylab = "Frequency",
+     col = "skyblue",
+     main = "Distribution of Income"
+     )
+```
+Bimodal , Not Normal !
+
+
+### QQ-plot
+```{r}
+# QQ-Plot
+qqnorm(income_df$income/1000,
+       main = "QQ-plot for income",
+       ylab = "Sample Quantiles in Thousand Dollars",
+       col = "skyblue")         
+qqline(income_df$income/1000, col = "red")  
+
+```
+The points deviate from the reference line , not Normal !
+
+```{r}
+# Boxplot
+boxplot(income_df$income, 
+        main = "Boxplot of Income", 
+        ylab = "Income", 
+        col = "lightblue")
+```
+ * the median is not at the center of box , indicating that the data is not normally distributed.
+ * The whisker lengths are different , indicating skewness in data, hence not Normal.
+ 
+```{r}
+shapiro.test(income_df$income)
+```
+As the p-value is < 0.05 , we can say that the data of income is not normally distributed
+
+### Results from graph summarized : 
+
+  * Histogram : Bi-modal , Not Normally Distributed.
+  * QQ-Plot : Deviation from the diagonal line, Not Normally Distributed.
+  * Box-Plot : asymmetric whisker lengths and median not at center, Not Normally Distributed.
+  * Shapiro-Wilk normality test : p-value < 0.05 ,  Not Normally Distributed.
+  
+**All the results indicates a strong evidence against the normality condition.**
+
+\newpage
+
+## b) [4 marks] Use the infer package to generate 4000 bootstrap samples of the sample mean and plot a histogram, QQ-plot, and boxplot of these bootstrap sample means.
+
+**Ans : **
+```{r}
+library(infer)
+library(ggplot2)
+```
+
+## boot-straping 4000 sample means
+```{r}
+set.seed(0862899) # Student number
+bootstrap_samples <- income_df %>%
+  specify(response = income) %>%  
+  generate(reps = 4000, type = "bootstrap") %>%  
+  calculate(stat = "mean")  
+
+```
+
+### Histogram of bootstrap means 
+```{r}
+
+ggplot(bootstrap_samples, aes(x = stat)) +
+  geom_histogram(binwidth = 500 ,fill = "lightblue", color = "black") +
+  labs(title = "Histogram of Bootstrap Sample Means", x = "Sample Mean Income", y = "Frequency") +
+  theme_minimal()
+
+```
+* Approximately Normal 
+
+### QQ-Plot of bootstrap means
+```{r}
+# Plot QQ-Plot of the bootstrap sample means
+qqnorm(bootstrap_samples$stat, main = "QQ-Plot of Bootstrap Sample Income Means",ylab = "Sample Income Quantiles")
+qqline(bootstrap_samples$stat, col = "red")
+```
+* It does not deviates from the diagonal line , means the sample bootstrap data is approximately normally distributed.
+
+### Box-Plot of bootstrap means
+```{r}
+boxplot(bootstrap_samples$stat, 
+        main = "Boxplot of Bootstrap Sample Income Means", 
+        ylab = "Sample Income Mean", 
+        col = "lightblue")
+```
+* The median is exactly at center and the whisker are also equal in length with minimum outliers indicating that the sample bootstraped data is approximately normally distributed.
+
+\newpage
+## [2 marks] Based on Part a) and b), construct a 90% confidence interval for the mean income for this company and interpret this interval.
+**Ans :**
+
+As the bootstraped sample means in part b provided us a with normally of the distribution, we can use a parametric based approach using t-test to calculate the 90% confidence interval.
+
+```{r}
+ttest <- t.test(bootstrap_samples$stat, conf.level = 0.90)
+ttest
+```
+We are  90% confident that the population mean income for is between $1,05,283.2 and $1,05,405.1.
+
+
+\newpage
+## d) [2 marks] What does this imply about using Shapiro-Wilks to assess the Central Limit Theorem’s normality condition?
+**Ans :**
+
+```{r}
+shapiro.test(bootstrap_samples$stat)
+```
+In part a , we used shapiro test on original data, and it showed that the original data was not normally distributed. Now we applied shapiro test on the bootstraped sample means of the data , and it clearly shows that the data of sample means from the bootstrap sample is normally distributed.
+
+Hence we can conclude that shaprio test is used to access the normality of the original data, but according to the Central Limit Theorem (CLT), even if the original data is not normally distributed, the sample means will be approximately normal if the sample size is large enough. And to verify this, we do not need to perform shaprio test on the sample means, as CLT will ensure their normality.
+
+
+\newpage
+
+# Question 2- Parametric Hypothesis Test [9 marks]
+A Harris Poll asked Americans whether states should be allowed to conduct random drug tests on elected officials. Of 21,355 respondents, 16,870 said “yes”.
+
+## a) [1 mark] What is the population? 
+**Ans :**
+The population is : All American Residences
+
+## b) [1 mark] What is the parameter of interest? 
+**Ans :**
+proportion of American residences who responded yes to conduct random drug tests on elected officials.
+
+## c) [1 mark] Estimate the parameter in part b) with the data. 
+**Ans :**
+```{r}
+n_yes <- 16870
+total <- 21355
+
+p <- n_yes/total
+p
+```
+The estimated parameter (sample proportion) is 79% 
+
+## d) [6 marks] The press release for this poll stated that “less than 80% of Americans agree with random drug testing of elected officials”. Is this supported by the data? Perform a parametric hypothesis test to answer this question using a 5% level of significance (𝛼 = 0.05).
+**Ans :**
+
+Hypothesis Testing :
+
+* Hypothesis :
+  *  Ho : p = 0.80 (True Proportions of Americans who says Yes is 80%)
+  *  Ha : p < 0.80 (True Proportion of Americans who says Yes is less than 80% )
+   
+* Assumptions : 
+  * Random Sampling : As it is a poll based survey, we can assume that it was randomly sampled.
+  * Independence : As the sample size is large enough , and it is also less than 10% of the entire American Population.
+  * Sample size and Normality : The sample size is large enough (np > 10) 
+                npo = 21355 x 0.80 = 17,084 > 10 (greater than 10),
+                n(1-po) = 21,355 * 0.20 = 4,271 (greater than 10)
+  As both the conditions are satisfied , we can say that the proportion is approximately Normally Distributed.
+  
+  
+* Calculating the test statistic (in this case we can use Z-score) : 
+
+```{r}
+
+n <- 21355  # Total responses
+x <- 16870  # "Yes" responses
+p_hat <- x / n 
+p0 <- 0.80 
+alpha <- 0.05  
+
+# Z-Score
+z <- (p_hat - p0) / sqrt((p0 * (1 - p0)) / n)
+z
+```
+
+* Finding the p-value for the calculated statistic :
+
+```{r}
+p_value <- pnorm(z)
+p_value
+
+```
+
+* Accepting/Rejecting Null Hypothesis Ho based on p-value :
+
+```{r}
+if (p_value < alpha) {
+  result <- "Reject the null hypothesis"
+} else {
+  result <- "Accept null hypothesis"
+}
+
+
+cat("Sample proportion (p̂):", p_hat, "\n")
+cat("Test statistic (z):", z, "\n")
+cat("P-value:", p_value, "\n")
+cat("Decision:", result, "\n")
+
+```
+As the p-value is much smaller than the significance level , hence we reject the null hypotheis.
+
+* Conclusion :
+There is enough evidence to support that less than 80% of Americans agree for random drug test.
+
+
+\newpage
+# Question 3: Non-Parametric Inference [8 marks] 
+A sociologist is studying the impact of private health insurance on well-being for Canadians, and gathers a small survey of 𝑛 = 250 Canadian’s with some limited data on their health. The data is contained in a spreadsheet named r3data.csv (on Blackboard). The data description is below: 
+
+* **Name:** first name of survey participant 
+* **Age:** discrete numerical variable, age of participant, in years 
+* **Insurance:** categorical variable, with "Private Insurance" meaning the participant has private health insurance, otherwise, "No Private Insurance" 
+* **Income_Bracket:** categorical variable, average annual gross income decile, in tens of thousands of dollars 
+* **Prescriptions:** categorical variable, with "TRUE" meaning the participant has current, regularly filled, prescription medications prescribed by a medical professional, that insurance may cover
+
+## a) [1 mark] What is the sociologist’s population of interest?
+**Ans :** The population of interest is all Canadian residents.
+
+
+## b) [1 mark] What is the sociologist’s parameter of interest?
+**Ans :** The parameter of interest is true proportion of Canadians who have private health insurance.
+
+
+## c) [3 marks] The sociologist has been told that at least 70% of Canadians have private health insurance. Does her data support this claim? Perform a parametric bootstrap (infer-based) hypothesis test to check this claim.
+**Ans :**
+
+Loading the data 
+```{r}
+library(readr)
+data <- read_csv("r3data.csv")
+str(data)
+head(data,5)
+```
+
+### Calculating the proportion of population who has Private Insurance
+```{r}
+library(tidyverse)
+observed_proportion <- data %>%
+  filter(Insurance == "Private Insurance") %>%
+  summarise(prop = n() / nrow(data)) %>%
+  pull(prop)
+
+```
+
+### Bootstrap hypothesis test (p = 0.7 ) 
+```{r}
+bootstrap_test <- data %>%
+  specify(response = Insurance, success = "Private Insurance") %>%
+  hypothesize(null = "point", p = 0.7) %>%
+  generate(reps = 1000, type = "draw") %>%
+  calculate(stat = "prop")
+
+```
+
+
+### Calculation of p-value
+```{r}
+p_value <- bootstrap_test %>%
+  summarise(p_value = mean(stat <= observed_proportion)) %>%
+  pull(p_value)
+
+cat("Observed Proportion:", observed_proportion, "\n")
+cat("P-Value:", p_value, "\n")
+```
+**P value is : 0.682**
+
+
+
+## d) [1 mark] Visualize the p-value for this test using the built-in infer visualization tool.
+**Ans :** 
+```{r}
+bootstrap_test %>%
+  visualize() +
+  shade_p_value(obs_stat = observed_proportion, direction = "left")
+```
+**The shaded region in red represents the p-value.**
+
+## e) [2 marks] Also using infer, compute a 91% confidence interval for the true underlying population proportion of Canadians who have private health insurance.
+**Ans :** 
+
+### Confidence Interval (91%)
+```{r}
+confidence_interval <- data %>%
+  specify(response = Insurance, success = "Private Insurance") %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "prop") %>%
+  get_confidence_interval(level = 0.91, type = "percentile")
+
+
+confidence_interval
+
+```
+
+### Conclusion 
+**We are 91% confident that the true proportion of Canadians having private health insurance lies between 66.4% - 76%.**
+

@@ -1,0 +1,136 @@
+---
+title: "R Assignment 04"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+### Loading Data ...
+```{r}
+prison <- read.csv(file='canada_incarceration.csv');
+```
+
+```{r}
+str(prison);
+summary(prison);
+```
+
+
+## Question 1– Canada’s Prison System
+### a) [1 mark] What test should you use and why?
+**Ans :**  
+We should use **Chi Squared Goodness of Fit Test**, as it allows us to compare the observed data with expected data, and see if the observed data deviates from the expected data significantly or not.
+
+### b) Create a barplot to visualize the data in the table. Create a side-by-side barplot with observed and expected counts next to each other.
+
+**Ans :**  
+
+### Barplot's
+```{r}
+
+incarcerated <- prison$Incarcerated;
+population_proportion <- prison$Proportion_of_Pop
+population_total <- sum(incarcerated) / sum(population_proportion)  
+
+
+expected <- population_proportion * population_total
+
+# barplot
+barplot(incarcerated,
+        names.arg = c("Indigenous", "Asian", "Black", "Caucasian", "Hispanic", "Other"),
+        col = "lightblue", main = "Observed Counts of Incarcerated Individuals",
+        ylab = "Counts", xlab = "Group",cex.axis = 0.7,cex.names = 0.7)
+
+
+counts <- rbind(incarcerated, expected)
+barplot(counts,
+        beside = TRUE,
+        names.arg = c("Indigenous", "Asian", "Black", "Caucasian", "Hispanic", "Other"),
+        col = c("black", "red"),
+        legend.text = c("Observed", "Expected"),
+        main = "Observed vs. Expected Counts",
+        ylab = "Counts", xlab = "Group",cex.axis = 0.7,cex.names = 0.7)
+
+```
+
+
+### c) [6 marks] Determine if there is any difference between the proportion of the population and the proportion of individuals incarcerated in federal prisons. (Use 𝛼 = 0.05.)
+**Ans :**  
+
+**Hypothesis**
+* Ho : Observed Proportions of incarcerated individuals are equal to the population proportion.
+* Ha : Observed Proportions of incarcerated individuals are not equal to the population proportion.
+
+### Chi Sqared Test 
+```{r}
+chisq_test <- chisq.test(x = prison$Incarcerated, p = prison$Proportion_of_Pop)
+chisq_test
+
+```
+As the p-value (2.2e-16) is smaller than 0.05, we reject the null hypothesis and state that observed proportions of incarcerated individuals are not equal to the population. This indicates that certain groups are over or under represented in Canadian federal prisons.
+
+
+\newpage
+### Loading Data ...
+```{r}
+chocolate <- read.csv(file='chocolate_antioxidants.csv');
+```
+```{r}
+str(chocolate);
+summary(chocolate);
+```
+
+## Question 2– Get Outta Here Oxidants!
+
+### a) [1 mark] What test should you use and why? 
+**Ans :** We should use one way ANOVA test because we have more than 2 levels of the factor(chocolate_type has 3 levels) , the dependent variable antioxidant capacity of blood plasma is continious, and we want to compare the mean of groups to determine if they are statistically significant or not.
+
+### b) [2 marks] Create a boxplot to visualize the data in the table (properly labelled and with a title). 
+**Ans :**
+
+### Box-plot 
+```{r}
+
+library(tidyr)
+chocolate_long <- pivot_longer(chocolate, cols = c("DC", "DC_MK", "MC"), 
+                               names_to = "chocolate_type", values_to = "antioxidant_capacity")
+
+
+boxplot(antioxidant_capacity ~ chocolate_type, data = chocolate_long,
+        main = "Total Antioxidant Capacity by Chocolate Type", 
+        xlab = "Chocolate Type", ylab = "Total Antioxidant Capacity",
+        col = c("lightblue", "lightgreen", "lightcoral"), border = "darkblue")
+
+
+```
+
+
+### c) [6 marks] Determine if there is any difference between the mean total antioxidant capacity of blood plasma after consuming the different types of chocolate. (Use 𝛼 =0.05.) 
+**Ans :**
+
+### Performing ANOVA Test 
+```{r}
+anova_result <- aov(antioxidant_capacity ~ chocolate_type, data = chocolate_long)
+summary(anova_result)
+
+```
+As p-value is extremenly small , we reject the null hypothesis that all means are equal. This indicates that there is statistically significant difference between the antioxidant capacities in blood plasma of the three chocolate types.
+
+
+### d) [2 marks] You should find a difference in part c). Which group means are different from the others? Use Tukey’s HSD with a significance level of 𝛼 = 0.05. You just need to write a few sentences indicating which means are different and your reasoning.
+**Ans :**  
+### Tukey’s HSD Test:
+```{r}
+
+tukey <- TukeyHSD(anova_result)
+tukey$chocolate_type;
+
+```
+* For dark chocolate with milk (DC_MK) it is significantly lower than that of dark chocolate (DC) as p-value is significant, Similarly, the mean antioxidant capacity of milk chocolate (MC) is lower than that of dark chocolate (DC) as p-value is smaller than 0.05.
+
+* For MC vs DC_MK. the p-value is indicates not significant.
+
+* From the above results , we can see that Dark Chocolate (DC) has a significantly higher atioxidant capacity than both dark_chocolate with milk and milk chocolate.
+
+  * There is no significant difference between dark chocolate with milk and milk chocolate.
+
+  * The above results indicates that adding milk in dark chocolate or using milk chocolate does not alter the antioxident levels in blood plasma compared to dark chocolate alone.
+

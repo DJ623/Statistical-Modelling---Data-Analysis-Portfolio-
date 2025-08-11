@@ -1,0 +1,41 @@
+---
+title: "5240 Workshop Exercise 02"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+## Loading the Football and Weights of teams dataset 
+
+```{r}
+football_data <- read.csv(file= "ws02-exercise-football.csv", header=TRUE)
+weight_of_teams <- read.csv(file = "football_weights.csv", header=TRUE)
+
+str(football_data)
+str(weight_of_teams)
+
+```
+
+## Visualization's
+
+```{r}
+
+
+boxplot(x=list(weight_of_teams$broncos,weight_of_teams$cowboys,weight_of_teams$dolphins,weight_of_teams$fortyniners,weight_of_teams$packers),
+        xlab = "Football Teams (American)",
+        ylab = "Weight of Footbal Players (in pounds)",
+        names = c("Broncos","Cowboys","Dolphins","Fortyniners","Packers"),
+        col = c("#780000","#c1121f","#fdf0d5","#003049","#669bbc"),
+        main = "Weight of Players Vs Football Teams"
+        )
+
+```
+
+## Analysis from the boxplot 
+
+1. Dolphis have higher variablity of weights in their players as the IQR has larger height meaning 50% of the players in Dolphis have larger spread in their weights and also the whiskers are spread out.
+
+2. Broncos and Cowboys have similar median, but few players in Cowboys are underweight as indicated by the outliers . On the other hand , Cowboys's players weights is more uniform because the box size (IQR) has short height meaning that 50% pf the data is centered aroud the median.
+
+3. Fortyniners have variety of players , some players below 220 and some as high as 270., also the larger box size indicates that Fortyniners also have variation in  large chunk of players.
+
+4. Packers have similar spread of weights like Fortyniners , but they are less skewed as compared to Fortyniners as the median is nearly in center of the box.

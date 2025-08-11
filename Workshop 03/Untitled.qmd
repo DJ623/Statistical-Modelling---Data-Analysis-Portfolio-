@@ -1,0 +1,70 @@
+---
+title: "5240 Workshop 03"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+## Loading the data (mtcars)
+```{r}
+data("mtcars")
+dim(mtcars)
+```
+## Printing the names of columns in mtcars
+
+```{r}
+names(mtcars)
+str(mtcars)
+```
+## Scatter plot of weight vs miles per gallon
+```{r}
+#| label: scatter plot of weight vs mpg (miles per gallon) 
+plot(mtcars$wt ~ mtcars$mpg,
+     col = "midnightblue",
+     xlab = "Miles per gallon (mpg)",
+     ylab = "Weight of car (1000 lbs)",
+     main = "Weight Vs Average Fuel Economy (mpg)")
+
+```
+```{r}
+cor(mtcars$wt,mtcars$mpg)
+```
+## Relation between weight and mpg
+* From the plot , the relationship is negative , also confirmed by correlation value which is    negative
+* It is linear in nature
+* Strength of relationship is strong as the correlation value is closer to -1
+
+From this interpretation we can say that there is a strong relationship between weight of cars and their average fuel economy (mpg) , as the weight increases, mpg decreases.
+
+
+## Fitting of Linear Model between weight and mpg
+```{r}
+model_fit <-lm(mtcars$wt ~ mtcars$mpg , data = mtcars)
+```
+## Summary of the Fitted Model
+```{r}
+summary(model_fit)
+```
+
+## Plot of new model
+```{r}
+#| label: Model for Weight of cars (weight) Vs average fuel economy (mpg)
+plot(mtcars$wt ~ mtcars$mpg , 
+     xlab = "miles per gallon (mpg)",
+     ylab = "weight (1000 lbs)",
+     col = "midnightblue"
+     )
+
+abline(model_fit, col = "orange" ,lwd=3)
+```
+
+
+$$
+\hat{W} = 6.0 - 0.14\cdot \hat{mpg}
+$$
+
+
+* Standard Deviation of the residuals : 0.4945.
+* The proportion of variance of model is 0.7528 meaning that there is 75.28% of variation      across the weight variable in mtcars data.
+* The model seems to be a good model as the relationship is strong and also the data points are less deviated from the fitting line.
+
+Note : Sometimes models can give different interpretation beyond their range , like in the above model the orange line indicates the relationship and according to the values of mpg(x axis) if mpg is more tha 25 then the weight will be negative which can never happen. So we have to be careful enough while interpretation of the results.

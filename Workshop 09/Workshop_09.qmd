@@ -1,0 +1,64 @@
+---
+title: "5240 Workshop 09"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+### Loading the Data ...
+```{r}
+library(tidyr)
+library(ggplot2)
+football <- read.csv(file = 'footballweights.csv')
+```
+
+```{r}
+str(football)
+
+```
+### a) Converting to longer format 
+```{r}
+
+long_football <- pivot_longer(
+  football,
+  cols = everything(),
+  names_to = "team",
+  values_to = "weights"
+)
+
+```
+```{r}
+str(long_football)
+```
+
+## b) Box Plot
+```{r}
+
+ggplot(long_football, aes(x = team, y = weights)) +
+  geom_boxplot(fill = c("#780000","#c1121f","#fdf0d5","#003049","#669bbc"), col="black") + 
+  labs(
+    title = "Team Player's Weights Distribution",
+    x = "Team",
+    y = "Weight"
+  ) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+```
+
+## c) ANOVA 
+
+*Ho : * All Teams have same mean weights of players.
+*Ha : * At least one Team has different mean weight of players.
+```{r}
+anova_result <- aov(weights~team, data = long_football)
+summary(anova_result)
+```
+As the p-values(0.03) from the anova is < 0.05, we have to reject the null hypothesis and conclude that at least one team has a different mean weight.
+To find the teams who has different mean weight,we can perform Tukey's Honestly Significant Difference Test.
+
+## d) Tukey's Honestly Significant Difference Test
+```{r}
+TukeyHSD(anova_result)
+```
+### Results 
+Fortyniners and cowboys are the teams , who has significant difference in their mean weights with fortyniners mean score significantly lower than cowboys by 16.17 units.

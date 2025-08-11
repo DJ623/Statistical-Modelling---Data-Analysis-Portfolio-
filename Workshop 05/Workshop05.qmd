@@ -1,0 +1,53 @@
+---
+title: "5240 Workshop 05"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+### Assuming we have no other information about the older brother (in other words, he can be treated as a randomly selected 8th grader), what is the probability that the older brother will run the 5km in less than 24 minutes?
+
+**Ans : **
+Given information : 
+
+* For Older Brother (Grade 8): 
+    * $\mu$ = 25
+    * $\sigma$ = 2 
+    * $X$ = 24
+    
+To find the probability that Older brother run's the 5 km race in less than 24 mins, we can calculate Z score for x = 24 and then find the probability P(z<calculated z value)
+```{r}
+z_older_brother <- scale(24, center = 25, scale = 2)
+round(100*(pnorm(z_older_brother)),2)
+```
+**Probability that the older brother will run the 5km in less than 24 minutes is 30.85% or 0.3085**
+
+\newpage
+### Suppose that the older brother runs his race in 23 minutes and 30 seconds and the younger brother runs his race in 27 minutes. Using Z-scores, determine which brother ran his race faster, relative to their respective grades.
+
+**Ans : ** To determine this we can calculate z score for both the brothers , as z scores allow us to compare different normal distributions on same scale.
+the lower z score will correspond to the brother who ran his race faster.
+
+Given information from the table : 
+
+  * For Older Brother (Grade 8): 
+    * $\mu$ = 25
+    * $\sigma$ = 2 
+    * $X$ = 23.5
+
+  * For Younger Brother (Grade 6): 
+    * $\mu$ = 28
+    * $\sigma$ = 3 
+    * $X$ = 27
+    
+```{r}
+z_older <- scale(23.5, center = 25, scale = 2)
+z_younger <- scale(27, center = 28, scale = 3)
+
+z_older
+```
+```{r}
+z_younger
+```
+Z-score for older brother (-0.75) < Z-score for younger brother (-0.33),
+Hence **Older brother** ran his race faster.
+

@@ -1,0 +1,284 @@
+---
+title: "Workshop 07"
+date: "October 29, 2024"
+date-format: long
+format: pdf
+---
+
+# Simulations
+
+## Setup
+
+First, let's install the following packages if you don't have them installed 
+yet:
+
+```{r}
+#| label: install-packages
+#| eval: false
+
+# install.packages(c("foreach", "doParallel", "infer", "dplyr", "ggplot2", "purrr"))
+# you don't actually need "purrr" ... I guess ... but it _is_ awesome
+```
+
+NOTE: you should only run this once (after uncommenting) and normally 
+we would run this in the R Console and never run `install.packages` in 
+a Quarto document or code chunk.
+
+Next, let's load the packages:
+
+```{r}
+#| label: load-packages
+#| warning: false
+#| message: false
+
+library(foreach)
+library(doParallel)
+library(infer)
+library(dplyr)
+```
+
+
+## Simulations - General Idea
+
+The general idea of a simulation is to generate data from a known distribution 
+and then apply a statistical method to see how well it performs.
+
+## Implementation
+
+We are going to need to perform the same operation multiple times. The way 
+to do this would be with a loop.
+
+### Base `for-loop`
+
+We can use a `for-loop`, which is "standard:
+
+```{r}
+#| label: for-loop-idea
+
+n <- 1000
+my_results <- numeric(n)
+
+for (i in 1:n){
+  my_results[i] <- i^2
+}
+
+my_results %>% glimpse()
+```
+
+We don't need to loop over indices, we can loop over ANYTHING:
+
+```{r}
+my_colours <- c("red", "green", "blue", "indigo")
+
+for (col in my_colours){
+  print(col)
+  str(col)
+}
+```
+
+
+### `foreach`
+
+However, we can also use the `foreach` package to do the same thing. It 
+also gives us the option of running our code in parallel.
+
+```{r}
+#| label: foreach-loop-idea
+
+n <- 1000
+my_results <- foreach(i = 1:n, .combine = c) %do% {
+  i^2
+}
+
+my_results %>% glimpse()
+```
+
+The other options to `.combine` results are: `rbind`, `cbind`
+
+How were the elements stored? Can we change this?
+
+```{r}
+#| label: foreach-loop-idea-v2
+
+# need to "combine" the results in some way that isn't a list ... 
+
+n <- 1000
+my_results <- foreach(i = 1:n) %do% {
+  i^2
+}
+
+my_results[1:6] %>% glimpse()
+```
+
+### `doParallel`
+
+Now, if we have a pretty intense simulation, we _can_ run the loop 
+iterations in parallel!
+
+Start with the same `foreach` structure as before, add in the change from 
+combining the results, and then add in the `doParallel` package.
+
+We will need to _make a cluster_, _register the cluster_, and then 
+_stop the cluster_ when we are done.
+
+```{r}
+#| label: doParallel-loop-idea
+
+cl <- makeCluster(7)
+registerDoParallel(cl)
+
+n <- 1000
+my_results <- foreach(i = 1:n) %dopar% {
+  i^2
+}
+
+stopCluster(cl)
+```
+
+There's a package in R called `microbenchmark` that will let you 
+determine how quickly code is running.
+
+
+## Simulation with Sample Proportions
+
+Okay - let's get to it!
+
+Let's assume that our observations are Bernoulli with a probability of 
+success of 0.05.
+
+Let's also assume that our observations are expensive to collect and so we have 
+only collected 10 of them.
+
+```{r}
+#| label: population-setup
+
+# sample size
+n <- 10000
+
+# population parameter for the Bernoulli distribution
+p <- 0.0007
+```
+
+There are several ways to simulate this data; BUT, with the powers of 
+`rbinom`.
+
+### Run the simulation
+
+We want to work through the following steps:
+
+1. Sample from the population;
+2. Determine a p-value using:
+    i. exact distribution
+    ii. normal approximation
+    iii. bootstrap approach
+3. Compare the p-values to a set significance level and record if 
+we rejected the null (`TRUE`) or not (`FALSE`).
+
+This will result in our 
+
+```{r}
+#| label: sim-setup
+
+nsim <- 10000
+alpha <- 0.1 # 10% significance level
+```
+
+Using $\alpha = 0.1$ means that we expect a Type I (false positive) error 
+rate of 10%.
+
+And now, we run zee simulations!
+
+$$
+H_{0}: p = 0.04 \qquad \text{vs} \qquad H_{A}: p \neq 0.04
+$$
+
+```{r}
+#| label: run-sim
+#| warning: false
+#| message: false
+#| cache: true
+
+# set.seed(1234)
+
+# make a cluster if you want
+ncores <- detectCores()-2
+cl <- makeCluster(ncores)
+registerDoParallel(cl)
+
+# run the simulation using either %do% or %dopar%
+results <- foreach(i = 1:nsim, .combine = rbind, 
+                   .packages = c("dplyr", "infer")) %dopar% {
+  cur_samp <- rbinom(1, size = n, prob = p)
+  
+  test_exact <- binom.test(x = cur_samp, n = n, p = p, 
+                           alternative = "greater")
+  phat <- cur_samp / n
+  
+  se <- sqrt(p * (1 - p) / n)
+  z <- (phat - p) / se
+  pval_clt <- pnorm(z, lower.tail = FALSE)
+  
+  # test_clt <- prop.test(x = cur_samp, n = n, p = p, 
+  #                       alternative = "two.sided", correct = FALSE)
+  
+  obs_df <- data.frame(outcome = c(rep("yes", cur_samp), 
+                                   rep("no", n - cur_samp)))
+  
+  
+  
+  if (cur_samp == 0){
+    pval_boot <- 1
+  } else {
+    pval_boot <- obs_df %>%
+      specify(response = outcome, success = "yes") %>%
+      hypothesize(null = "point", p = p) %>%
+      generate(reps = 3000, type = "draw") %>%
+      calculate(stat = "prop") %>%
+      get_p_value(obs_stat = phat, direction = "greater") %>%
+      as.numeric()
+  }
+  
+  data.frame(exact_reject = test_exact$p.value < alpha, 
+             clt_reject = pval_clt < alpha, 
+             # boot_reject = FALSE
+             boot_reject = pval_boot < alpha
+             )
+}
+
+# stop the cluster if you made one
+stopCluster(cl)
+```
+
+### Analyze the results
+
+Now that we have the results, time to do some MORE statistics!!
+
+First, let's calculate the proportion of simulation runs where we 
+rejected the null hypothesis:
+
+```{r}
+#| label: analyze-results-prop-reject
+
+results %>% glimpse()
+
+sum(results$exact_reject) / nsim
+sum(results$clt_reject) / nsim
+sum(results$boot_reject) / nsim
+```
+
+Next, let's run some proportion tests to see if there is a statistically 
+significant difference between our observed proportion for each test (i.e., 
+the estimated Type I error rate) and the expected Type I error rate ($\alpha$).
+
+Here, we can, and will, just use `binom.test`:
+
+```{r}
+#| label: analyze-results-binom-test
+
+```
+
+
+## Conclusions and Summary
+
+Okay, what did we end up learning here?
+

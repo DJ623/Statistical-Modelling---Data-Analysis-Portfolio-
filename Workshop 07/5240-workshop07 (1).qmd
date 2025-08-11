@@ -1,0 +1,211 @@
+---
+title: "Workshop 07"
+date: "October 29, 2024"
+date-format: long
+format: pdf
+---
+
+# Simulations
+
+## Setup
+
+First, let's install the following packages if you don't have them installed 
+yet:
+
+```{r}
+#| label: install-packages
+#| eval: false
+
+# install.packages(c("foreach", "doParallel", "infer", "dplyr", "ggplot2", "purrr"))
+# you don't actually need "purrr" ... I guess ... but it _is_ awesome
+```
+
+NOTE: you should only run this once (after uncommenting) and normally 
+we would run this in the R Console and never run `install.packages` in 
+a Quarto document or code chunk.
+
+Next, let's load the packages:
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(foreach)
+library(doParallel)
+library(infer)
+library(dplyr)
+```
+
+
+## Simulations - General Idea
+
+The general idea of a simulation is to generate data from a known distribution 
+and then apply a statistical method to see how well it performs.
+
+## Implementation
+
+We are going to need to perform the same operation multiple times. The way 
+to do this would be with a loop.
+
+### Base `for-loop`
+
+We can use a `for-loop`, which is "standard:
+
+```{r}
+#| label: for-loop-idea
+
+n <- 1000
+my_results <- numeric(n)
+
+for (i in 1:n){
+  my_results[i] <- i^2
+}
+
+my_results %>% glimpse()
+```
+
+### `foreach`
+
+However, we can also use the `foreach` package to do the same thing. It 
+also gives us the option of running our code in parallel.
+
+```{r}
+#| label: foreach-loop-idea
+
+n <- 1000
+my_results <- foreach(i = 1:n) %do% {
+  i^2
+}
+
+my_results[1:6] %>% glimpse()
+```
+
+How were the elements stored? Can we change this?
+
+```{r}
+#| label: foreach-loop-idea-v2
+
+# need to "combine" the results in some way that isn't a list ... 
+
+n <- 1000
+my_results <- foreach(i = 1:n) %do% {
+  i^2
+}
+
+my_results[1:6] %>% glimpse()
+```
+
+### `doParallel`
+
+Now, if we have a pretty intense simulation, we _can_ run the loop 
+iterations in parallel!
+
+Star with the same `foreach` structure as before, add in the change from 
+combining the results, and then add in the `doParallel` package.
+
+We will need to _make a cluster_, _register the cluster_, and then 
+_stop the cluster_ when we are done.
+
+```{r}
+#| label: doParallel-loop-idea
+
+n <- 1000
+my_results <- foreach(i = 1:n) %do% {
+  i^2
+}
+
+
+```
+
+
+## Simulation with Sample Proportions
+
+Okay - let's get to it!
+
+Let's assume that our observations are Bernoulli with a probability of 
+success of 0.05.
+
+Let's also assume that our observations are expensive to collect and so we have 
+only collected 10 of them.
+
+```{r}
+#| label: population-setup
+
+# sample size
+n <- 10
+
+# population parameter for the Bernoulli distribution
+p <- 0.05
+```
+
+There are several ways to simulate this data; BUT, with the powers of 
+the `infer` package, we can use _it_!
+
+### Run the simulation
+
+We want to work through the following steps:
+
+1. Sample from the population;
+2. Determine a p-value using:
+    i. exact distribution
+    ii. normal approximation
+    iii. bootstrap aproach
+3. Compare the p-values to a set significance level and record if 
+we rejected the null (`TRUE`) or not (`FALSE`).
+
+This will result in our 
+
+```{r}
+#| label: sim-setup
+
+nsim <- 1000
+alpha <- 0.1 # 10% significance level
+```
+
+Using $\alpha = 0.1$ means that we expect a Type I (false positive) error 
+rate of 10%.
+
+And now, we run zee simulations!
+
+```{r}
+#| label: run-sim
+
+set.seed(1234)
+
+# make a cluster if you want
+
+# run the simulation using either %do% or %dopar%
+results <- "stuff"
+
+# stop the cluster if you made one
+
+```
+
+### Analyze the results
+
+Now that we have the results, time to do some MORE statistics!!
+
+First, let's calculate the proportion of simulation runs where we 
+rejected the null hypothesis:
+
+```{r}
+#| label: analyze-results-prop-reject
+
+
+```
+
+Next, let's run some proportion tests to see if there is a statistically 
+significant difference between our observed proportion for each test (i.e., 
+the estimated Type I error rate) and the expected Type I error rate ($\alpha$).
+
+Here, we can, and will, just use `binom.test`:
+
+```{r}
+#| label: analyze-results-binom-test
+
+```
+
+
+## Conclusions and Summary
+
+Okay, what did we end up learning here?

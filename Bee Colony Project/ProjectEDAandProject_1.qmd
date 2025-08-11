@@ -1,0 +1,370 @@
+---
+title: "Project EDA and Proposal"
+author: "Hashibul Hussain Udoy"
+format: pdf
+editor: visual
+bibliography: references.bib
+execute:
+  echo: false
+---
+
+# **Introduction**
+
+The dataset titled *"Bee Colony Stressors"* is sourced from the TidyTuesday project, @tidytuesday_bee_colony, specifically the dataset released on January 11, 2022, based on data from the U.S. Department of Agriculture (USDA). This dataset provides information on honeybee colonies in the United States from 2015 to 2021, capturing details such as the number of colonies lost, colonies added, and stressors impacting their survival. The variables include temporal and geographical dimensions like Year, State, and Period, along with measures such as Colonies Lost and Colonies Added. Stressors in the dataset encompass Varroa mites, pesticides, diseases, pests and parasites, adverse weather, and habitat loss—factors recognized for their significant contribution to global bee population declines. These declines have profound implications for pollination, agriculture, and biodiversity, underscoring the critical role of bees in sustaining ecosystems and food systems. This dataset enables an investigation into patterns of colony losses and the influence of stressors across time and states, facilitating a deeper understanding of the challenges faced by bee colonies. The dataset was accessed through the [TidyTuesday GitHub repository](https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-01-11), which curates publicly available datasets for data analysis and visualization by the data science community.\
+
+# **Literature Review**
+
+The study explores the research question: **"What is the impact of specific stressors on the survival rates of bee colonies, and how do these vary across time and states in the U.S.?"** Existing research provides critical insights into the complex dynamics affecting bee health and survival.
+
+@smith_varroa_mites, review the role of Varroa mite infestations as a leading cause of colony losses, emphasizing the need for effective management strategies to mitigate their impact. @jones_pesticide_effects, examine the effects of pesticide exposure on honeybee health and pollination efficiency, demonstrating how agricultural practices influence bee populations. @johnson_environmental_stressors, analyze temporal trends in environmental stressors contributing to colony decline, offering a broader perspective on seasonal and long-term factors. @williams_cumulative_stressors, highlight the cumulative effects of multiple stressors, arguing that interactions among stressors can amplify risks to bee populations. By synthesizing these insights, this study seeks to provide actionable recommendations for sustainable agricultural practices and policy interventions aimed at preserving bee colonies and their ecological and economic roles.
+
+## Dataset Description
+
+The "Bee Colony Stressors" dataset, sourced from the TidyTuesday project, @tidytuesday_bee_colony, provides comprehensive information on honeybee colonies in the United States from 2015 to 2021. It includes two main components: the colony dataset, which records metrics such as the number of colonies lost, added, and renovated, along with their respective percentages, and the stressor dataset, which details various stressors affecting colonies, such as Varroa mites and pesticides, along with the percentage of colonies impacted. Data collection involved a stratified sampling approach, with operations having five or more colonies surveyed quarterly, while those with fewer were surveyed annually. This dataset is crucial for analyzing trends in colony health, understanding the impact of specific stressors, and informing strategies for bee conservation, thereby addressing significant ecological and agricultural concerns.
+
+```{r, include=FALSE}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(tidyr)
+library(knitr)
+
+# Load datasets
+colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
+stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
+
+# Preprocessing
+colony <- colony %>% filter(state != "United States")
+stressor <- stressor %>% filter(state != "United States")
+colony <- colony %>% mutate(across(where(is.numeric), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
+stressor <- stressor %>% mutate(across(where(is.numeric), ~ ifelse(is.na(.), median(., na.rm = TRUE), .)))
+
+# Stratified sampling (10% of data from each state)
+set.seed(123)
+colony_sample <- colony %>% group_by(state) %>% sample_frac(0.1)
+stressor_sample <- stressor %>% group_by(state) %>% sample_frac(0.1)
+
+# Merge datasets
+merged_data <- colony_sample %>% inner_join(stressor_sample, by = c("year", "months", "state"))
+
+```
+
+```{r, include=FALSE}
+stat_summary <- data.frame(
+  Variable = c("Colonies Lost", "Colony Loss Percentage", "Stress Percentage"),
+  Mean = c(mean(colony$colony_lost), mean(colony$colony_lost_pct), mean(stressor$stress_pct, na.rm = TRUE)),
+  Median = c(median(colony$colony_lost), median(colony$colony_lost_pct), median(stressor$stress_pct, na.rm = TRUE)),
+  Min = c(min(colony$colony_lost), min(colony$colony_lost_pct), min(stressor$stress_pct, na.rm = TRUE)),
+  Max = c(max(colony$colony_lost), max(colony$colony_lost_pct), max(stressor$stress_pct, na.rm = TRUE)),
+  StdDev = c(sd(colony$colony_lost), sd(colony$colony_lost_pct), sd(stressor$stress_pct, na.rm = TRUE))
+)
+```
+
+```{r}
+kable(stat_summary, caption = "Summary Statistics for Key Variables")
+```
+
+The summary statistics table provides key insights into the dataset, including means, medians, minimums, maximums, and standard deviations for the variables of interest: Colonies Lost, Colony Loss Percentage, and Stress Percentage.
+
+-   **Colonies Lost**: The mean (8211.12) and median (2100) indicate a right-skewed distribution, suggesting that while most states experience lower losses, a few states report significantly higher losses. The standard deviation (22951.69) further emphasizes this variability.
+
+-   **Colony Loss Percentage**: With a mean of 11.28% and a maximum of 52%, this statistic highlights the proportion of colonies lost relative to the total, indicating that stressors can lead to substantial losses in certain instances.
+
+-   **Stress Percentage**: The average stress percentage is 10.41%, with a maximum of 102%, suggesting that some states experience extreme stress levels, potentially due to multiple stressors.
+
+This table effectively summarizes the central tendencies and variability in the data, providing a foundation for further analysis.
+
+## **Data Analysis**
+
+#### Trend of bee colony losses over the years:
+
+```{r}
+loss_trend <- colony_sample %>%
+  group_by(year) %>%
+  summarise(total_colony_lost = sum(colony_lost))
+
+ggplot(loss_trend, aes(x = year, y = total_colony_lost)) +
+  geom_line(color = "blue", linewidth = 1) +
+  labs(caption = "
+       Figure 1: Trend of Bee Colony Losses Over the Years", 
+       x = "Year", 
+       y = "Total Colonies Lost")+
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+Figure 1 shows fluctuations in colony losses over the years, with noticeable peaks and troughs. This trend suggests that external factors, possibly including environmental changes or management practices, may significantly influence colony survival rates over time. The increasing trend in certain years could indicate worsening conditions for bee colonies, warranting further investigation into the causes.
+
+#### Stressors affecting the bee colonies the most:
+
+```{r}
+stressor_summary <- stressor_sample %>%
+  group_by(stressor) %>%
+  summarise(avg_stress_pct = mean(stress_pct, na.rm = TRUE)) %>%
+  arrange(desc(avg_stress_pct))
+
+ggplot(stressor_summary, aes(x = reorder(stressor, -avg_stress_pct), y = avg_stress_pct)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  coord_flip() +
+  labs(caption = "
+       Figure 2: Average Stress Percentage by Stressor", 
+       x = "Stressors", 
+       y = "Average Stress Percentage")+
+  theme(plot.caption = element_text(hjust = 0.5))
+
+```
+
+As per figure 2, Varroa mites and Other pests/parasites appear to be the most significant stressors, with the highest average stress percentages. This finding aligns with existing literature that identifies Varroa mites as a leading cause of colony losses. The lower stress percentages associated with other stressors suggest that while they contribute to colony decline, their impact may be less severe compared to Varroa mites and Other pests/parasites.
+
+#### Colony Losses:
+
+```{r}
+state_losses <- colony %>%
+  group_by(state) %>%
+  summarise(total_lost = sum(colony_lost)) %>%
+  arrange(desc(total_lost))
+
+top_states <- state_losses %>% slice_head(n = 5)
+bottom_states <- state_losses %>% slice_tail(n = 5)
+
+top_bottom_states <- bind_rows(
+  top_states %>% mutate(group = "Highest Losses"),
+  bottom_states %>% mutate(group = "Lowest Losses")
+)
+
+ggplot(top_bottom_states, aes(x = reorder(state, -total_lost), y = total_lost, fill = group)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ group, scales = "free") +
+  labs(caption = "
+       Figure 3: Colony Losses: Top 5 and Bottom 5 States", 
+       x = "State", 
+       y = "Total Colonies Lost") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+As seen in figure 3, California shows the highest losses, which may be attributed to its large agricultural sector and associated pesticide use. In contrast, states like Connecticut and Vermont exhibit lower losses, potentially due to different agricultural practices or environmental conditions. This comparison highlights the geographic variability in colony losses and suggests that state-specific factors play a crucial role in bee colony health.
+
+### Colony loss percentages by stressor type
+
+```{r}
+ggplot(merged_data, aes(x = stressor, y = colony_lost_pct)) +
+  geom_boxplot(fill = "lightgreen") +
+  coord_flip() +
+  labs(caption = "
+       Figure 4: Colony Loss Percentage by Stressor", 
+       x = "Stressor", 
+       y = "Colony Loss Percentage")+
+  theme(plot.caption = element_text(hjust = 0.5))
+
+```
+
+The boxplot, in figure 4, indicates that Varroa mites is associated with the highest median colony loss percentage, while Pesticides shows the lowest median colony loss percentage. The spread of the data suggests that while some stressors consistently lead to higher losses, others may have more variable impacts. This variability underscores the complexity of factors influencing colony health and survival.
+
+### Correlation between colony loss and stress percentages
+
+```{r, message=FALSE, warning=FALSE}
+correlation <- cor(merged_data$colony_lost, merged_data$stress_pct, use = "complete.obs")
+print(paste("Correlation between colony loss and stress percentage:", round(correlation, 2)))
+```
+
+The analysis of the relationship between colony loss and stress percentage reveals a correlation coefficient of **0.18**. This weak positive correlation suggests that higher stress percentages are associated with increased colony losses, but the strength of this relationship is limited. A correlation coefficient close to zero indicates that other factors may also significantly influence colony loss, and stress percentage alone may not be a reliable predictor of colony health.
+
+Given the weak correlation, it is essential to consider additional variables that could impact colony survival, such as environmental conditions, management practices, and the presence of specific stressors like Varroa mites or pesticide exposure. This finding underscores the complexity of factors affecting bee populations and highlights the need for further investigation into the multifaceted nature of colony health.
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(merged_data, aes(x = stress_pct, y = colony_lost)) +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(caption = "
+  Figure 5: Relationship Between Colony Loss and 
+       Stress Percentage", 
+       x = "Stress Percentage", 
+       y = "Colonies Lost")+
+  theme(plot.caption = element_text(hjust = 0.5))
+```
+
+The plot in figure 5, shows a positive correlation, indicating that as stress percentage increases, colony loss tends to increase as well. However, the correlation appears weak (correlation coefficient of 0.18), suggesting that stress percentage alone may not be a strong predictor of colony loss. This finding implies that other factors, possibly including environmental conditions or management practices, may also significantly influence colony survival.
+
+### Regression Model and pairs plot
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(broom)  # For tidy output
+library(GGally)  # For ggpairs
+library(knitr)   # For kable
+
+# Fit the regression model
+model <- lm(colony_lost ~ stress_pct + year + factor(state), data = merged_data)
+
+# Extract residuals summary
+residuals_summary <- summary(model)$residuals
+residuals_table <- data.frame(
+    Residuals = c("Min", "1Q", "Median", "3Q", "Max"),
+    Values = c(min(residuals_summary), 
+               quantile(residuals_summary, 0.25), 
+               median(residuals_summary), 
+               quantile(residuals_summary, 0.75), 
+               max(residuals_summary))
+)
+
+# Extract model statistics
+model_stats <- data.frame(
+    Statistic = c("Residual standard error", "Multiple R-squared", "Adjusted R-squared", "F-statistic", "p-value"),
+    Value = c(
+        summary(model)$sigma,
+        summary(model)$r.squared,
+        summary(model)$adj.r.squared,
+        summary(model)$fstatistic[1],
+        summary(model)$fstatistic[4]
+    )
+)
+```
+
+```{r}
+kable(residuals_table, format = "markdown", caption = "Summary of Residuals")
+```
+
+Table 2 summarizes the residuals from the regression model assessing the relationship between colony loss and stress percentage. The residuals indicate the differences between observed and predicted values of colony loss. The minimum residual is **-13736.9965**, while the maximum is **13736.9965**, suggesting a wide range of prediction errors. The first quartile (1Q) is **-197.6785**, the median is **0.0000**, and the third quartile (3Q) is **204.9779**, indicating that the model has a tendency to underpredict in some cases and overpredict in others. This summary provides insights into the model's performance and the variability of predictions.
+
+```{r}
+kable(model_stats, format = "markdown", caption = "Summary of Model Statistics")
+```
+
+Table 3 presents the summary statistics of the regression model used to analyze the relationship between colony loss and various predictors. The residual standard error is **3685.7230122**, indicating the average distance that the observed values fall from the regression line. The Multiple R-squared value of **0.9879** suggests that approximately **98.79%** of the variability in colony loss can be explained by the model, indicating a strong fit. The Adjusted R-squared value of **0.9754** accounts for the number of predictors in the model, reinforcing the model's explanatory power. The F-statistic of **79.4359605** indicates that the model is statistically significant, suggesting that at least one predictor variable is related to colony loss.
+
+```{r, message=FALSE, warning=FALSE}
+library(GGally)
+
+ggpairs(merged_data, columns = c("colony_lost", "colony_added", "stress_pct")) +
+  labs(caption = "
+       Figure 6: Pairs Plot of Colony Loss, Colony Added, and Stress Percentage") +
+  theme(plot.caption = element_text(hjust = 0.5))
+
+```
+
+The pairs plot reveals several relationships among the variables. Notably, there is a moderate positive correlation between colony additions and colony losses, suggesting that states may be adding colonies at a rate similar to losses. The scatterplots indicate that while stress percentage has some relationship with colony loss, the presence of outliers and the spread of data points suggest that other unmeasured factors may also be influencing these relationships.
+
+\newpage
+
+## Hypothesis Testing
+
+### Hypothesis test 1 : Proportions test for number of colonies lost between high and low stress states
+
+H~o~ : No difference in number of colonies lost between high and low stress states
+
+H~a~ : Significant difference in number of colonies lost between high and low stress states.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(knitr)  # For kable
+library(dplyr)  # For data manipulation
+
+# Hypothesis testing: Proportion test for number of colonies lost between high stress and low stress groups.
+high_stress <- merged_data %>% filter(stress_pct > median(stress_pct))
+low_stress <- merged_data %>% filter(stress_pct <= median(stress_pct))
+
+# Define threshold for high colony loss
+loss_threshold <- median(merged_data$colony_lost, na.rm = TRUE)
+
+# Calculate counts of high-loss colonies in each group
+high_stress_high_loss <- nrow(high_stress %>% filter(colony_lost > loss_threshold))
+low_stress_high_loss <- nrow(low_stress %>% filter(colony_lost > loss_threshold))
+
+# Total number of colonies in each group
+high_stress_total <- nrow(high_stress)
+low_stress_total <- nrow(low_stress)
+
+# Perform two-proportion z-test
+prop_test_results <- prop.test(
+  x = c(high_stress_high_loss, low_stress_high_loss),  # Counts of high-loss colonies
+  n = c(high_stress_total, low_stress_total),         # Total colonies in each group
+  alternative = "two.sided"                          # Test for any difference
+)
+
+# Extract important results
+results_table <- data.frame(
+  Statistic = c("X-squared", "Degrees of Freedom", "p-value", "Proportion 1", "Proportion 2"),
+  Value = c(
+    round(prop_test_results$statistic, 6),
+    prop_test_results$parameter,
+    round(prop_test_results$p.value, 4),
+    round(prop_test_results$estimate[1], 4),
+    round(prop_test_results$estimate[2], 4)
+  )
+)
+
+# Print the results table using kable
+kable(results_table, format = "markdown", caption = "Results of the Proportion Test")
+```
+
+Table 4 summarizes the results of the proportion test conducted to compare the number of colonies lost between high and low stress states. The X-squared statistic is **0.060185**, with a degrees of freedom of **1**, indicating a very low chi-squared value. The p-value of **0.8062** suggests that there is no significant difference in the number of colonies lost between the two groups, leading to the conclusion that we fail to reject the null hypothesis. This indicates that stress levels do not significantly impact colony losses, highlighting the need for further investigation into other potential factors.
+
+### Hypothesis test 2 : Relationship between different stressors and colonies lost
+
+H~o~ : There is no difference in the median colony loss between stressor groups.
+
+H~a~ : There is difference in the median colony loss between stressor groups.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)  # For kable
+library(dplyr)  # For data manipulation
+
+# Perform Shapiro-Wilk test for normality within each stress level
+shapiro_results <- by(merged_data$colony_lost, merged_data$stressor, function(x) shapiro.test(x))
+
+# Extract relevant information into a data frame
+results_table <- data.frame(
+  Stressor = names(shapiro_results),
+  W = sapply(shapiro_results, function(x) round(x$statistic, 5)),
+  p_value = sapply(shapiro_results, function(x) round(x$p.value, 6))
+)
+
+# Print the results table using kable
+kable(results_table, format = "markdown", caption = "Results of Shapiro-Wilk Normality Tests by Stressor")
+```
+
+Table 5 presents the results of the Shapiro-Wilk normality tests conducted for colony loss across different stressor types. The W statistics range from **0.37396** for Unknown stressors to **0.86203** for Pesticides, with corresponding p-values indicating varying levels of normality. Most stressors show significant departures from normality (p-values \< 0.05), suggesting that the assumptions of normality are not met for these groups. This finding justifies the use of non-parametric tests, such as the Kruskal-Wallis test, for further analysis of colony loss across different stressor categories.
+
+As most of the Stressors does not satisfy the assumption of normality, we can use Kruskal-Wallis test.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)  # For kable
+
+# Run Kruskal-Wallis Test to compare colony loss across different stressors
+kruskal_result <- kruskal.test(colony_lost ~ stressor, data = merged_data)
+
+# Extract relevant information
+kruskal_summary <- data.frame(
+  Statistic = "Kruskal-Wallis Chi-squared",
+  Value = round(kruskal_result$statistic, 4),
+  DF = kruskal_result$parameter,  # Changed to DF
+  p_value = round(kruskal_result$p.value, 4)
+)
+
+# Print the results table using kable
+kable(kruskal_summary, format = "markdown", caption = "Results of the Kruskal-Wallis Test")
+```
+
+Hypothesis :
+
+Ho : There is no difference in the median colony loss between stressor groups.
+
+Ha : There is difference in the median colony loss between stressor groups.
+
+Conclusion The p-value (0.70) indicates that the null hypothesis cannot be rejected , In other words, based on the data, there is no significant evidence to suggest that number of colony loss differs between different stressor categories.
+
+## Conclusion
+
+In summary, the exploratory data analysis of the "Bee Colony Stressors" dataset reveals that the factors influencing bee colony losses. The analysis and test performed indicate that some of the stressors like Varroa mites, are significant but individual impact on of each stressor is weak on the number of colonies lost, as evidenced by the correlation analysis. The statistical tests suggest that there is insufficient evidence to support the claims that stressors individually has an significant affect on colony loss. However these stressors combined with other factors might amplify the effect. But this study was aimed at testing individual impact only.
+
+\newpage
+
+Appendix
+
+```{r}
+#| echo: true
+#| eval: false
+#| ref.label: !expr knitr::all_labels()
+```
+
+References:

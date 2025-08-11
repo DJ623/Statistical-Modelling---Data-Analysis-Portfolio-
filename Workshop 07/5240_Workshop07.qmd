@@ -1,0 +1,69 @@
+---
+title: "5240 Workshop 07"
+author: "Digvijay Jondhale 0862899"
+format: pdf
+---
+
+```{r}
+library(dplyr)
+```
+
+### Loading the results ...
+```{r}
+results <- readRDS(file="5240-mean-reject-ws07.rds")
+glimpse(results)
+```
+### Hypothesis 
+
+**Ho (Null) :** Proportions of simulation rejected using CLT based approach was 10% (p = 0.10).
+
+**Ha (Alternate) :** Proportion of simulation rejected using CLT based approach was not equal to 10% (p != 0.10)
+
+$\alpha$ = 0.05
+
+
+### P value 
+
+#### Boot Method
+```{r}
+boot_sum <- sum(results$boot)
+boot_sum
+```
+```{r}
+binom.test(boot_sum,10000, 0.10)
+```
+ 
+**p value (boot method) : ** 3.03e-06
+
+
+
+#### CLT Method
+```{r}
+clt_sum <- sum(results$clt)
+clt_sum
+```
+```{r}
+binom.test(clt_sum,10000,0.10)
+```
+**p value (clt method) : **  < 2.2e-16
+
+
+
+#### Exact Method
+```{r}
+exact_sum <- sum(results$exact)
+exact_sum
+
+binom.test(exact_sum,10000,0.10)
+```
+**p value (exact method) : **  0.3681
+
+### Conclusion 
+
+For **clt based approach** , the p-value was less than 2.2e-16, which is extremely less than significance level 0.05, providing a strong evidence to reject the null hypothesis. Hence proportion of simulation rejected using clt based approach was different than 10%.
+
+Similar result was observed for **boot method** (p-value(3.03e-06) < 0.05), rejecting null hypothesis, and making a conclusion that proportion of simulation rejected using boot based method was different from 10%.
+
+
+p - value for  **exact method** (p-value(0.3681) > 0.05), accepting null hypothesis, and making a conclusion that proportion of simulation rejected using boot based method was equal to 10%.
+
